@@ -1,4 +1,4 @@
-import { Heart, Star } from "lucide-react";
+import { Heart } from "lucide-react";
 import { Product } from "@/types";
 
 interface ProductCardProps {
@@ -8,23 +8,11 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => (
   <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
     <div className="relative">
-      {/* <img
-        // src={product.image}
-        alt={product.name}
-        className="w-full h-48 object-cover"
-      /> */}
       <button className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full hover:bg-white transition-colors">
         <Heart className="w-4 h-4 text-gray-600 hover:text-red-500 transition-colors" />
       </button>
     </div>
     <div className="p-4">
-      {/* <div className="flex items-center gap-2 mb-2">
-        <span className="text-sm text-gray-500">{product.brand}</span>
-        <div className="flex items-center gap-1">
-          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-          <span className="text-xs text-gray-600">{product.rating}</span>
-        </div>
-      </div> */}
       <h3 className="font-semibold text-gray-900 mb-2">{product.name}</h3>
       <p className="text-xs text-gray-600 mb-3">{product.match_reason}</p>
       <div className="flex items-center justify-between">
