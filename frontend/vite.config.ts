@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         "/api": {
-          target: env.BACKEND_URL || "http://localhost:8000",
+          target: env.VITE_BACKEND_URL || "http://localhost:8000",
           changeOrigin: true,
           secure: true,
           timeout: 30000,
