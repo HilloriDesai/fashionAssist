@@ -51,6 +51,10 @@ except Exception as e:
     logger.error(f"Failed to initialize services: {str(e)}")
     raise
 
+@app.get("/")
+def read_root():
+    return {"status": "ok"}
+
 @app.post("/api/chat")
 async def process_message(request: ChatRequest):
     """Process a chat message and return AI-generated response with product recommendations."""

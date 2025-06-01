@@ -2,7 +2,10 @@ import axios from "axios";
 import { ChatResponse } from "@/types";
 
 const api = axios.create({
-  baseURL: "/api",
+  baseURL:
+    import.meta.env.VITE_DEV === "true"
+      ? "/api"
+      : import.meta.env.VITE_BACKEND_URL,
   headers: {
     "Content-Type": "application/json",
   },
