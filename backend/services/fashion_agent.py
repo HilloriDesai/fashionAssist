@@ -33,7 +33,7 @@ class FashionAgent:
 
     def _build_prompt(self, message: str, conversation_manager: ConversationManager) -> str:
         """Build the prompt for AI"""
-        logger.info(f"Conversation history: {conversation_manager.get_messages()[-3:] if len(conversation_manager.get_messages()) > 3 else conversation_manager.get_messages()}")
+        logger.info(f"Conversation history: {conversation_manager.get_messages()}")
         logger.info(f"Current attributes: {conversation_manager.get_attributes()}")
         
         sample_products = self.products_df.head(5).to_dict('records')
@@ -65,7 +65,7 @@ Your primary capabilities:
 
 CURRENT SITUATION:
 - User message: "{message}"
-- Conversation history: {conversation_manager.get_messages()[-3:] if len(conversation_manager.get_messages()) > 3 else conversation_manager.get_messages()}
+- Conversation history: {conversation_manager.get_messages()[-10:] if len(conversation_manager.get_messages()) > 1 else conversation_manager.get_messages()}
 - Followup count: {conversation_manager.get_followup_count()}/2
 - Current attributes: {conversation_manager.get_attributes()}
 
@@ -171,6 +171,9 @@ JSON Response:
             Dict containing response message, type, and recommendations
         """
         try:
+            # Add user message to conversation history
+            self.conversation_manager.add_message("user", message)
+            
             # Get AI response
             ai_response = await self.ai_response_handler.get_ai_response(message, self.conversation_manager)
             logger.debug(f"AI Response: {ai_response}")
@@ -191,25 +194,38 @@ JSON Response:
                 # Handle different response types
                 response_type = ai_response.get('type')
                 
-                if response_type == 'followup' and self.conversation_manager.should_ask_followup():
+                # Check if we've reached the followup limit
+                if not self.conversation_manager.should_ask_followup():
+                    logger.info("Followup limit reached, forcing recommendation response")
+                    response = self.response_formatter.create_recommendation_response()
+                    return response
+                
+                if response_type == 'followup':
                     logger.info(f"Creating followup response for followup count {self.conversation_manager.get_followup_count()}")
                     self.conversation_manager.increment_followup_count()
                     return self.response_formatter.create_followup_response(ai_response)
                 elif response_type == 'direct_conversation':
+                    # Add assistant message to conversation history
+                    self.conversation_manager.add_message("assistant", ai_response['message'])
                     return {
                         "type": "direct_conversation",
                         "message": ai_response['message'],
                         "followup_question": ai_response.get('followup_question', ''),
                         "attributes_so_far": self.conversation_manager.get_attributes(),
-                        "recommendations": []
+                        "recommendations": [],
+                        "messages": self.conversation_manager.get_messages()
                     }
-                elif response_type == 'recommendation':
-                    # Get recommendations - our new filtering logic will handle fallbacks
+                else:
+                    # Force recommendation response if it's already a recommendation
+                    logger.info("Creating recommendation response")
                     response = self.response_formatter.create_recommendation_response()
                     return response
             
             # If we get here, something went wrong with the AI response
-            return self.ai_response_handler._fallback_response(message)
+            fallback_response = self.ai_response_handler._fallback_response(message)
+            # Add fallback message to conversation history
+            self.conversation_manager.add_message("assistant", fallback_response['message'])
+            return fallback_response
             
         except Exception as e:
             logger.error(f"Error processing message: {str(e)}")

@@ -41,18 +41,24 @@ class ConversationManager:
         logger.debug(f"Updated state: {self.state}")
 
     def update_attributes(self, extracted: Dict, inferred: Dict):
-        """Update extracted and inferred attributes, maintaining combined state"""
+        """Update conversation attributes with new extracted and inferred values"""
         logger.info(f"Updating attributes - extracted: {extracted}, inferred: {inferred}")
         
-        # If this is a new conversation (no existing attributes), reset first
-        if not self.combined_attrs:
-            self.reset()
-            
+        # Store the current followup count
+        current_followup_count = self.state["followup_count"]
+        
+        # Update extracted and inferred attributes
         self.extracted_attrs.update(extracted)
         self.inferred_attrs.update(inferred)
-        self.combined_attrs = {**self.inferred_attrs, **self.extracted_attrs}  # Extracted takes priority
+        
+        # Combine attributes
+        self.combined_attrs = {**self.extracted_attrs, **self.inferred_attrs}
+        
+        # Update state with combined attributes while preserving followup count
         self.state["attributes"] = self.combined_attrs
-        logger.debug(f"Updated combined attributes: {self.combined_attrs}")
+        self.state["followup_count"] = current_followup_count
+        
+        logger.debug(f"Updated attributes: {self.combined_attrs}")
 
     def get_extracted_attributes(self) -> Dict:
         """Get extracted attributes"""
@@ -195,6 +201,7 @@ class ConversationManager:
             metadata: Optional metadata about the message
         """
         message = {
+            "id": len(self.messages) + 1,  # Simple incremental ID
             "role": role,
             "content": content,
             "timestamp": datetime.now().isoformat()
@@ -220,4 +227,13 @@ class ConversationManager:
         matching_attrs = [attr for attr in required_attributes if attr in current_attrs]
         has_enough = len(matching_attrs) >= 2
         logger.debug(f"Has enough info: {has_enough} (found {len(matching_attrs)} required attributes)")
-        return has_enough 
+        return has_enough
+
+    def clear_attributes(self):
+        """Clear all attributes after making recommendations"""
+        logger.info("Clearing all attributes")
+        self.extracted_attrs = {}
+        self.inferred_attrs = {}
+        self.combined_attrs = {}
+        self.state["attributes"] = {}
+        logger.debug("All attributes cleared") 

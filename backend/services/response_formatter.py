@@ -34,8 +34,22 @@ class ResponseFormatter:
         Returns:
             Dict containing formatted followup response
         """
-        # Add the assistant's message to the conversation state
-        self.conversation_manager.add_message("assistant", ai_response['message'])
+        # Check if we've reached the followup limit
+        if not self.conversation_manager.should_ask_followup():
+            logger.info("Followup limit reached, creating recommendation response instead")
+            return self.create_recommendation_response()
+            
+        # Add the assistant's message to the conversation state with metadata
+        self.conversation_manager.add_message(
+            "assistant", 
+            ai_response['message'],
+            {
+                "response_type": "followup",
+                "followup_question": ai_response.get('followup_question', ''),
+                "attributes": self.conversation_manager.get_attributes(),
+                "followup_count": self.conversation_manager.get_followup_count()
+            }
+        )
         
         # Create the response with both the message and followup question
         response = {
@@ -99,7 +113,7 @@ class ResponseFormatter:
         
         self.conversation_manager.add_message("assistant", response_message)
         
-        # Reset followup count after making a recommendation
+        # Reset followup count but don't clear attributes to maintain chat history
         self.conversation_manager.state["followup_count"] = 0
         
         return {
@@ -108,7 +122,8 @@ class ResponseFormatter:
             "recommendations": rec_list,
             "final_attributes": self.conversation_manager.get_attributes(),
             "justification": justification,
-            "is_fallback": is_fallback
+            "is_fallback": is_fallback,
+            "messages": self.conversation_manager.get_messages()
         }
     
     def _generate_match_reason(self, product: Dict) -> str:

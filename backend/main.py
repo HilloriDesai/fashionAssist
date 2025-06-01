@@ -28,7 +28,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", os.getenv("FRONTEND_URL")],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://fashionassist.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -87,6 +87,7 @@ async def process_message(request: ChatRequest):
             "message": response["message"],
             "type": response["type"],
             "recommendations": response.get("recommendations", []),
+            "messages": session.messages,
             "current_state": {
                 "attributes": session.attributes,
                 "followup_count": session.followup_count

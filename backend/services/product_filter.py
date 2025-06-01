@@ -50,7 +50,7 @@ class ProductFilter:
         if len(filtered) == 0 or len(filtered) < top_k:
             logger.info(f"Not enough results ({len(filtered)}), applying fallback logic")
             
-            # Try removing filters one by one, starting with lowest priority
+            # First try: Remove non-essential filters (priority < 4)
             for attr, value in sorted_attrs:
                 if len(filtered) >= top_k:
                     break
@@ -70,6 +70,28 @@ class ProductFilter:
                     filtered = new_filtered
                     removed_filters.append(attr)
                     logger.info(f"Removed filter '{attr}' to get more results. New count: {len(filtered)}")
+            
+            # Second try: If still no results, try with only category and size
+            if len(filtered) == 0:
+                logger.info("No results after first fallback, trying with only category and size")
+                essential_filters = {
+                    k: v for k, v in attributes.items() 
+                    if k in ['category', 'size'] and k in attributes
+                }
+                if essential_filters:
+                    filtered = ProductFilter._apply_filters(products_df.copy(), essential_filters)
+                    removed_filters = [k for k in attributes.keys() if k not in essential_filters]
+                    logger.info(f"Trying with only essential filters. New count: {len(filtered)}")
+            
+            # Final fallback: If still no results, try with just category
+            if len(filtered) == 0 and 'category' in attributes:
+                logger.info("No results after second fallback, trying with only category")
+                filtered = ProductFilter._apply_filters(
+                    products_df.copy(), 
+                    {'category': attributes['category']}
+                )
+                removed_filters = [k for k in attributes.keys() if k != 'category']
+                logger.info(f"Trying with only category. New count: {len(filtered)}")
         
         # Score remaining products
         filtered = ProductFilter._score_products(filtered, attributes)

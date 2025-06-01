@@ -46,6 +46,16 @@ class AIResponseHandler:
                 "recommendations": []
             }
             
+        # Check for attribute removal requests
+        if any(phrase in message.lower() for phrase in ["remove all attributes", "clear attributes", "reset attributes"]):
+            return {
+                "type": "direct_conversation",
+                "message": "I've cleared all the previous attributes. What would you like to look for?",
+                "extracted_attributes": {},
+                "inferred_attributes": {},
+                "recommendations": []
+            }
+            
         prompt = self._build_prompt(message, conversation_manager)
         
         try:
