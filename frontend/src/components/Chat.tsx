@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Send, ShoppingBag, Sparkles } from "lucide-react";
 import { Message } from "@/types";
-import { ProductCard } from "./ProductCard";
 import { chatService } from "@/services/api";
+import ProductCard from "./ProductCard";
 
 const initialMessage: Message = {
   id: 1,
@@ -17,9 +17,6 @@ export const Chat: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [currentAttributes, setCurrentAttributes] = useState<
-    Record<string, any>
-  >({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -76,6 +73,9 @@ export const Chat: React.FC = () => {
       timestamp: new Date(),
     };
 
+    console.log("User Query:", inputValue);
+    console.log("Current Message History:", messages);
+
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
@@ -83,19 +83,20 @@ export const Chat: React.FC = () => {
     try {
       const response = await chatService.processMessage(
         inputValue,
-        sessionId || undefined,
-        currentAttributes
+        sessionId || undefined
       );
+
+      console.log("API Response:", {
+        type: response.type,
+        message: response.message,
+        recommendations: response.recommendations,
+        followup: response.followup_question,
+      });
 
       // Save session ID if this is a new session
       if (!sessionId && response.session_id) {
         setSessionId(response.session_id);
         localStorage.setItem("chatSessionId", response.session_id);
-      }
-
-      // Update current attributes from response
-      if (response.current_state?.attributes) {
-        setCurrentAttributes(response.current_state.attributes);
       }
 
       const botMessage: Message = {

@@ -2,7 +2,7 @@ import pandas as pd
 import asyncio
 import os
 from dotenv import load_dotenv
-from eCommerceAssistance import FashionAgent
+from services.fashion_agent import FashionAgent
 
 # Load environment variables from .env file
 load_dotenv()
