@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 from services.fashion_agent import FashionAgent
@@ -7,6 +7,7 @@ import logging
 from dotenv import load_dotenv
 from models import ChatRequest
 from session_manager import SessionManager
+from starlette.responses import Response
 
 # Load environment variables
 load_dotenv()
@@ -25,14 +26,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://fashionassist.onrender.com"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+allowed_origin_suffix = "-hilloridesais-projects.vercel.app"
+
+@app.middleware("http")
+async def custom_cors_middleware(request: Request, call_next):
+    origin = request.headers.get("origin")
+    if origin and (origin.endswith(allowed_origin_suffix) or origin.startswith("http://localhost")):
+        response: Response = await call_next(request)
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, DELETE"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        if request.method == "OPTIONS":
+            response.status_code = 200
+            return response
+        return response
+    else:
+        return await call_next(request)
 
 # Initialize services
 try:
